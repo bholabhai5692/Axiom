@@ -1,0 +1,99 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f6f2">
+  <title>Axiom | AI workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'axiom/css/chat.css' %}">
+</head>
+<body>
+  <div class="app-shell" id="app-shell" data-send-url="{{ send_url }}" data-progress-url="{{ progress_url }}">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="{% url 'axiom:home' %}" aria-label="Axiom home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="brand-name">axiom<span class="brand-period">.</span></span>
+        <span class="brand-edition">AI WORKSPACE</span>
+      </a>
+
+      <form action="{% url 'axiom:new_conversation' %}" method="post" class="new-chat-form">
+        {% csrf_token %}
+        <button class="new-chat" type="submit"><span aria-hidden="true">+</span> New conversation</button>
+      </form>
+
+      <div class="history-heading">YOUR SPACE <span>{{ conversations|length }}</span></div>
+      <nav class="conversation-list" aria-label="Conversations">
+        {% for item in conversations %}
+          <a class="conversation-link{% if item.id == conversation.id %} is-active{% endif %}" href="{% url 'axiom:conversation' item.id %}">
+            <span class="conversation-dot" aria-hidden="true"></span>
+            <span>{{ item.title }}</span>
+          </a>
+        {% empty %}
+          <p class="empty-history">Your conversations will appear here.</p>
+        {% endfor %}
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="provider-status">
+          <span class="status-indicator is-connected" aria-hidden="true"></span>
+          <span class="status-copy"><strong>Selenium scraper</strong><small>notrack.ai/chat</small></span>
+          <span class="status-menu" aria-hidden="true">···</span>
+        </div>
+        <div class="sidebar-footnote">PRIVATE BY SESSION <span>·</span> AXIOM 01</div>
+      </div>
+    </aside>
+
+    <div class="mobile-scrim" id="mobile-scrim"></div>
+    <main class="main-panel">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" type="button" aria-label="Open conversation menu">☰</button>
+        <div class="breadcrumb"><span>Workspace</span><span class="breadcrumb-slash">/</span><strong>{{ conversation.title }}</strong></div>
+        <div class="topbar-right"><span class="model-chip"><span class="model-chip-dot"></span>NoTrack chat</span><span class="avatar" aria-label="Guest session">G</span></div>
+      </header>
+
+      <section class="chat-layout" aria-label="Chat with Axiom">
+        <div class="message-scroll" id="message-scroll">
+          <div class="message-list" id="message-list" aria-live="polite" aria-relevant="additions text">
+            {% if not messages %}
+              <div class="welcome" id="welcome">
+                <div class="welcome-kicker"><span class="welcome-spark">✳</span> YOUR THINKING, IN GOOD COMPANY</div>
+                <h1>Good questions<br>start <span>somewhere.</span></h1>
+                <p>Bring a half-formed idea, a hard problem, or the next thing you want to make. We’ll work it out together.</p>
+                <div class="prompt-grid" aria-label="Try a prompt">
+                  <button class="prompt-card" type="button" data-prompt="Help me break a big, overwhelming task into clear next steps."><span class="prompt-icon prompt-icon-green">↗</span><span><strong>Find a way in</strong><small>Turn a big task into clear steps</small></span><span class="prompt-arrow">↗</span></button>
+                  <button class="prompt-card" type="button" data-prompt="I have a rough idea. Ask me questions to help me make it more specific."><span class="prompt-icon prompt-icon-orange">◇</span><span><strong>Think it through</strong><small>Shape an idea with better questions</small></span><span class="prompt-arrow">↗</span></button>
+                  <button class="prompt-card" type="button" data-prompt="Explain a complicated topic to me with a practical example."><span class="prompt-icon prompt-icon-blue">⌘</span><span><strong>Learn something</strong><small>Make a tricky topic click</small></span><span class="prompt-arrow">↗</span></button>
+                  <button class="prompt-card" type="button" data-prompt="Help me write something clear, natural, and well structured."><span class="prompt-icon prompt-icon-pink">✎</span><span><strong>Make a first draft</strong><small>Get words on the page</small></span><span class="prompt-arrow">↗</span></button>
+                </div>
+              </div>
+            {% else %}
+              {% for message in messages %}
+                <article class="message message-{{ message.role }}">
+                  <div class="message-avatar{% if message.role == 'assistant' %} assistant-avatar{% endif %}">{% if message.role == 'assistant' %}<span class="tiny-mark" aria-hidden="true">✳</span>{% else %}G{% endif %}</div>
+                  <div class="message-body"><div class="message-meta">{% if message.role == 'assistant' %}AXIOM{% else %}YOU{% endif %}<span>·</span>{{ message.created_at|date:"H:i" }}</div><div class="message-content">{{ message.content }}</div></div>
+                </article>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="composer-area">
+          <div class="error-notice" id="error-notice" role="alert" hidden></div>
+          <form class="composer" id="composer">
+            {% csrf_token %}
+            <label class="visually-hidden" for="message-input">Message Axiom</label>
+            <textarea id="message-input" name="message" rows="1" maxlength="12000" placeholder="Ask anything, or start with an idea…" required></textarea>
+            <div class="composer-bottom"><span class="composer-hint"><span class="keyboard-key">↵</span> to send <span class="hint-divider">·</span> <span class="keyboard-key">⇧ ↵</span> for a new line</span><button class="send-button" id="send-button" type="submit" aria-label="Send message" title="Send message">↑</button></div>
+          </form>
+          <p class="disclaimer">AXIOM CAN MAKE MISTAKES. CHECK IMPORTANT DETAILS.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="{% static 'axiom/js/chat.js' %}" defer></script>
+</body>
+</html>
